@@ -26,13 +26,54 @@ const toMargin = (value: unknown) => {
   return Math.max(0, Math.min(MAX_MARGIN, margin));
 };
 
-const createDocument = (content: string, styles: string) => `<!doctype html>
+const createDefaultFontCss = (requestUrl: string, fontFamily: unknown) => {
+  if (
+    typeof fontFamily !== "string" ||
+    !fontFamily.includes("Alibaba PuHuiTi")
+  ) {
+    return "";
+  }
+
+  // Docker's renderer uses Liberation Sans for Latin glyphs and Noto Sans SC
+  // for Chinese glyphs. Browser Run has a different system font set, so load
+  // the same files from this deployment instead of relying on its fallbacks.
+  const origin = new URL(requestUrl).origin;
+  return `
+    @font-face {
+      font-family: "Alibaba PuHuiTi";
+      src: url("${origin}/fonts/LiberationSans-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: block;
+      unicode-range: U+0000-02FF, U+1E00-1EFF, U+2000-2BFF;
+    }
+    @font-face {
+      font-family: "Alibaba PuHuiTi";
+      src: url("${origin}/fonts/LiberationSans-Bold.ttf") format("truetype");
+      font-weight: 700;
+      font-style: normal;
+      font-display: block;
+      unicode-range: U+0000-02FF, U+1E00-1EFF, U+2000-2BFF;
+    }
+    @font-face {
+      font-family: "Alibaba PuHuiTi";
+      src: url("${origin}/fonts/NotoSansSC.ttf") format("truetype");
+      font-weight: 100 900;
+      font-style: normal;
+      font-display: block;
+      unicode-range: U+3000-9FFF, U+F900-FAFF, U+FF00-FFEF;
+    }
+  `;
+};
+
+const createDocument = (content: string, styles: string, fontCss: string) => `<!doctype html>
   <html>
     <head>
       <meta charset="utf-8" />
       <style>
         @page { size: A4; margin: 0; }
         html, body { margin: 0; padding: 0; background: #fff; }
+        ${fontCss}
         ${styles}
       </style>
     </head>
@@ -71,10 +112,11 @@ export const Route = createFileRoute("/generate-pdf")({
             return Response.json({ error: "PDF content is too large" }, { status: 413 });
           }
 
-          const { content, styles, margin } = (await request.json()) as {
+          const { content, styles, margin, fontFamily } = (await request.json()) as {
             content?: unknown;
             styles?: unknown;
             margin?: unknown;
+            fontFamily?: unknown;
           };
 
           if (typeof content !== "string" || !content.trim()) {
@@ -88,7 +130,11 @@ export const Route = createFileRoute("/generate-pdf")({
           }
 
           const pdf = await generatePdf(
-            createDocument(content, typeof styles === "string" ? styles : ""),
+            createDocument(
+              content,
+              typeof styles === "string" ? styles : "",
+              createDefaultFontCss(request.url, fontFamily)
+            ),
             toMargin(margin)
           );
 

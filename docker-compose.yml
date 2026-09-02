@@ -8,4 +8,27 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      - PDF_SERVICE_URL=http://pdf-service:3333
+    depends_on:
+      pdf-service:
+        condition: service_healthy
+    restart: always
+
+  pdf-service:
+    build:
+      context: .
+      dockerfile: pdf-service/Dockerfile
+    environment:
+      - NODE_ENV=production
+      - PORT=3333
+      # Set this to the original remote Noto Sans SC font URL if it becomes known.
+      - PDF_FONT_URL=
+    expose:
+      - "3333"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3333/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
     restart: always

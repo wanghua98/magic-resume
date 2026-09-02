@@ -7,6 +7,7 @@ import serverEntry from "./dist/server/server.js";
 const clientDir = resolve(process.cwd(), "dist/client");
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOSTNAME || "0.0.0.0";
+const pdfServiceUrl = process.env.PDF_SERVICE_URL || "http://127.0.0.1:3333";
 
 const MIME_TYPES = {
   ".css": "text/css; charset=utf-8",
@@ -92,11 +93,47 @@ function appendSetCookie(res, value) {
   res.setHeader("set-cookie", [String(existing), value]);
 }
 
+async function proxyPdfRequest(req, res, url) {
+  const method = (req.method || "GET").toUpperCase();
+  const hasBody = method !== "GET" && method !== "HEAD";
+  const headers = toHeaders(req.headers);
+  headers.delete("host");
+
+  const init = { method, headers };
+  if (hasBody) {
+    init.body = Readable.toWeb(req);
+    init.duplex = "half";
+  }
+
+  const target = new URL(`${url.pathname}${url.search}`, pdfServiceUrl);
+  const response = await fetch(target, init);
+  res.statusCode = response.status;
+  response.headers.forEach((value, key) => {
+    if (key.toLowerCase() === "set-cookie") {
+      appendSetCookie(res, value);
+    } else {
+      res.setHeader(key, value);
+    }
+  });
+
+  if (method === "HEAD" || !response.body) {
+    res.end();
+    return;
+  }
+
+  Readable.fromWeb(response.body).pipe(res);
+}
+
 createServer(async (req, res) => {
   try {
     const hostHeader = req.headers.host || `localhost:${port}`;
     const protocol = (req.headers["x-forwarded-proto"] || "http").toString().split(",")[0].trim();
     const url = new URL(req.url || "/", `${protocol}://${hostHeader}`);
+
+    if (url.pathname === "/generate-pdf") {
+      await proxyPdfRequest(req, res, url);
+      return;
+    }
 
     if (tryServeStatic(req, res, url)) return;
 

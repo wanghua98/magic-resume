@@ -11,6 +11,18 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000
     },
+    resolve: {
+      // The Docker/Node build does not provide Cloudflare runtime bindings.
+      // The Cloudflare Vite plugin supplies the real module for build:cf.
+      alias: isCloudflareBuild
+        ? undefined
+        : {
+            "cloudflare:workers": new URL(
+              "./src/lib/server/cloudflare-workers-stub.ts",
+              import.meta.url
+            ).pathname
+          }
+    },
     optimizeDeps: {
       exclude: ["pdfjs-dist"]
     },

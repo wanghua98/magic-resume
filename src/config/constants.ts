@@ -20,9 +20,7 @@ export const DEFAULT_FIELD_ORDER: BasicFieldType[] = [
 export const GITHUB_REPO_URL = "https://github.com/JOYCEQL/magic-resume";
 
 export const PDF_EXPORT_CONFIG = {
-  // Use the application's own server so Docker deployments do not depend on
-  // the public magicv.art PDF service or trigger a cross-origin request.
-  SERVER_URL: "/api/generate-pdf",
+  SERVER_URL: "https://api.magicv.art/generate-pdf",
   TIMEOUT: 45000,
   MAX_RETRY: 2,
   MAX_CONTENT_SIZE: 5 * 1024 * 1024

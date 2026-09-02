@@ -11,21 +11,6 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000
     },
-    resolve: {
-      alias: isCloudflareBuild
-        ? {
-            "@/lib/server/pdf-browser": new URL(
-              "./src/lib/server/pdf-browser.cloudflare.ts",
-              import.meta.url
-            ).pathname
-          }
-        : {
-            "cloudflare:workers": new URL(
-              "./src/lib/server/cloudflare-workers-stub.ts",
-              import.meta.url
-            ).pathname
-          }
-    },
     optimizeDeps: {
       exclude: ["pdfjs-dist"]
     },

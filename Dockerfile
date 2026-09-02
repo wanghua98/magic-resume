@@ -3,7 +3,9 @@
 FROM node:20-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 RUN npm install -g corepack@latest && corepack enable
+RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates font-noto font-noto-cjk
 WORKDIR /app
 
 FROM base AS deps
@@ -31,5 +33,6 @@ USER nodeapp
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 CMD ["node", "server.mjs"]

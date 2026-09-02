@@ -611,8 +611,7 @@ export const exportToPdf = async ({
       body: JSON.stringify({
         content: clonedElement.outerHTML,
         styles,
-        margin: pagePadding,
-        fontFamily: selectedFontFamily
+        margin: pagePadding
       }),
       mode: "cors",
       signal: AbortSignal.timeout(PDF_EXPORT_CONFIG.TIMEOUT)
